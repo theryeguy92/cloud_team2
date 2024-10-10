@@ -1,0 +1,22 @@
+---
+- name: Create Cloud VMs
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create Cloud VMs on Chameleon Cloud
+      openstack.cloud.server:
+        cloud: chameleon          # Reference your cloud alias in clouds.yaml
+        name: "{{ item }}"
+        flavor: "m1.small"        # Use the appropriate flavor for your project
+        image: "Ubuntu-22.04"     # Ensure this image name matches the image in Chameleon
+        key_name: "Assignment1"   # Name of the SSH keypair to use
+        network: "public"         # Network to attach the VM to (e.g., sharednet1 or public)
+        state: present
+        wait: yes                 # Wait until the VM is fully created before moving on
+      loop:
+        - "VM1"
+        - "VM2"
+        - "VM3"
+        - "VM4"
+      loop_control:
+        label: "{{ item }}"

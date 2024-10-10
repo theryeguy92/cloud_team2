@@ -1,0 +1,20 @@
+---
+- name: "Retrieve Cloud VM IP addresses"
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: "Get VM details from OpenStack"
+      openstack.cloud.server_info:
+        cloud: chameleon            # Use your cloud alias from clouds.yaml
+      register: vm_info
+
+    - name: "Show the VM details"
+      debug:
+        var: vm_info
+
+    - name: "Update Inventory with VM IPs"
+      lineinfile:
+        path: "/home/ryan/anisble_playbooks/Inventory"  # Update this path to your Inventory file
+        line: "{{ item.name }} ansible_host={{ item.addresses.public[0].addr }}"
+      loop: "{{ vm_info.servers }}"
+      when: "'public' in item.addresses"

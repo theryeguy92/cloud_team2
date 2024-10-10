@@ -1,0 +1,16 @@
+# Inventory file for Ansible playbooks
+
+[LocalMC]
+127.0.0.1 ansible_connection=local
+
+[CloudVMs]
+192.168.x.x
+192.168.x.y
+192.168.x.z
+192.168.x.w
+
+[CloudVMs:vars]
+ansible_user=cc
+ansible_connection=ssh
+ansible_ssh_private_key_file=/media/sf_root_ubuntu/Assignment1.pem
+ansible_ssh_common_args='-i /media/sf_root_ubuntu/F24_CS4287.pem -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p cc@bastion"'

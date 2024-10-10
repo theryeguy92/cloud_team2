@@ -1,0 +1,19 @@
+---
+- name: Copy Kafka tarball to Cloud VMs
+  ansible.builtin.copy:
+    src: "/tmp/kafka.tgz"
+    dest: "/tmp/kafka.tgz"
+    mode: '0644'  # Set file permissions to avoid risky-file-permissions warning
+
+- name: Extract Kafka
+  ansible.builtin.unarchive:
+    src: "/tmp/kafka.tgz"
+    dest: "/opt/"
+    remote_src: true
+    mode: '0755'  # Set directory permissions
+
+- name: Create symlink for Kafka
+  ansible.builtin.file:
+    src: "/opt/kafka_2.13-3.8.0"
+    dest: "/opt/kafka"
+    state: link
