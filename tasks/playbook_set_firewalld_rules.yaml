@@ -1,25 +1,75 @@
 ---
 - name: Ensure firewalld is installed and running
-  ansible.builtin.yum:
-    name: firewalld
-    state: present
+  vars:
+    firewalld_service_name: "{{ 'firewalld' if ansible_pkg_mgr == 'yum' else 'ufw' }}"
+  tasks:
+    - name: Install firewalld (or UFW) on CentOS/Ubuntu
+      ansible.builtin.package:
+        name: "{{ firewalld_service_name }}"
+        state: present
 
-- name: Start and enable firewalld
-  ansible.builtin.systemd:
-    name: firewalld
-    enabled: true
-    state: started
+    - name: Start and enable firewalld on CentOS
+      ansible.builtin.systemd:
+        name: firewalld
+        enabled: true
+        state: started
+      when: ansible_pkg_mgr == 'yum'
 
-- name: Open required Kafka ports
-  ansible.posix.firewalld:
-    port: "{{ item }}"
-    permanent: true
-    state: enabled
-  loop:
-    - 9092/tcp
-    - 2181/tcp
+    - name: Enable and start UFW on Ubuntu (if applicable)
+      ansible.builtin.ufw:
+        state: enabled
+      when: ansible_pkg_mgr == 'apt'
 
-- name: Reload firewalld
-  ansible.builtin.command:
-    cmd: firewall-cmd --reload
-  changed_when: false
+    - name: Ensure firewalld is started on Ubuntu
+      ansible.builtin.systemd:
+        name: ufw
+        state: started
+      when: ansible_pkg_mgr == 'apt'
+
+    - name: Open required Kafka and Zookeeper ports on CentOS
+      ansible.posix.firewalld:
+        port: "{{ item }}"
+        permanent: true
+        state: enabled
+      loop:
+        - 9092/tcp   # Kafka
+        - 2181/tcp   # Zookeeper
+        - 5984/tcp   # CouchDB
+        - 5000/tcp   # ML Model Server (Flask/Docker)
+      when: ansible_pkg_mgr == 'yum'
+
+    - name: Open Docker ports (on CentOS)
+      ansible.posix.firewalld:
+        port: "{{ item }}"
+        permanent: true
+        state: enabled
+      loop:
+        - 2375/tcp   # Docker communication
+        - 2376/tcp   # Docker secure communication
+        - 8080/tcp   # Optional for web apps within Docker containers
+      when: ansible_pkg_mgr == 'yum'
+
+    - name: Allow required ports on Ubuntu (via UFW)
+      ansible.builtin.ufw:
+        rule: allow
+        port: "{{ item }}"
+      loop:
+        - 9092/tcp   # Kafka
+        - 2181/tcp   # Zookeeper
+        - 5984/tcp   # CouchDB
+        - 5000/tcp   # ML Model Server (Flask/Docker)
+        - 2375/tcp   # Docker communication
+        - 2376/tcp   # Docker secure communication
+      when: ansible_pkg_mgr == 'apt'
+
+    - name: Reload firewalld on CentOS
+      ansible.builtin.command:
+        cmd: firewall-cmd --reload
+      when: ansible_pkg_mgr == 'yum'
+      changed_when: false
+
+    - name: Reload UFW on Ubuntu
+      ansible.builtin.command:
+        cmd: ufw reload
+      when: ansible_pkg_mgr == 'apt'
+      changed_when: false

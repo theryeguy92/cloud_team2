@@ -1,19 +1,106 @@
 ---
+- name: Ensure Kafka prerequisites are installed
+  hosts: cloud_vms
+  become: true
+  tasks:
+    - name: Install Java (required for Kafka)
+      ansible.builtin.apt:
+        name: openjdk-11-jdk
+        state: present
+        update_cache: yes
+
 - name: Copy Kafka tarball to Cloud VMs
-  ansible.builtin.copy:
-    src: "/tmp/kafka.tgz"
-    dest: "/tmp/kafka.tgz"
-    mode: '0644'  # Set file permissions to avoid risky-file-permissions warning
+  hosts: cloud_vms
+  become: true
+  tasks:
+    - name: Copy Kafka tarball from control node to Cloud VMs
+      ansible.builtin.copy:
+        src: "/tmp/kafka.tgz"  # Ensure you have this file on the control node
+        dest: "/tmp/kafka.tgz"
+        mode: '0644'  # Correct file permissions
 
-- name: Extract Kafka
-  ansible.builtin.unarchive:
-    src: "/tmp/kafka.tgz"
-    dest: "/opt/"
-    remote_src: true
-    mode: '0755'  # Set directory permissions
+    - name: Extract Kafka tarball to /opt directory
+      ansible.builtin.unarchive:
+        src: "/tmp/kafka.tgz"
+        dest: "/opt/"
+        remote_src: true
+        mode: '0755'  # Correct directory permissions
 
-- name: Create symlink for Kafka
-  ansible.builtin.file:
-    src: "/opt/kafka_2.13-3.8.0"
-    dest: "/opt/kafka"
-    state: link
+    - name: Create symbolic link for Kafka
+      ansible.builtin.file:
+        src: "/opt/kafka_2.13-3.8.0"
+        dest: "/opt/kafka"
+        state: link
+
+    - name: Create Kafka log directory
+      ansible.builtin.file:
+        path: /opt/kafka/logs
+        state: directory
+        mode: '0755'
+
+- name: Configure Kafka server properties
+  hosts: cloud_vms
+  become: true
+  tasks:
+    - name: Create Kafka server properties file
+      ansible.builtin.copy:
+        dest: /opt/kafka/config/server.properties
+        content: |
+          broker.id=0
+          log.dirs=/opt/kafka/logs
+          zookeeper.connect={{ zookeeper_host }}:2181
+          listeners=PLAINTEXT://{{ ansible_host }}:9092
+          num.partitions=1
+          default.replication.factor=1
+          log.retention.hours=168
+        mode: '0644'
+
+- name: Create systemd service for Kafka
+  hosts: cloud_vms
+  become: true
+  tasks:
+    - name: Create Kafka service file
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/kafka.service
+        content: |
+          [Unit]
+          Description=Apache Kafka
+          Requires=zookeeper.service
+          After=zookeeper.service
+
+          [Service]
+          Type=simple
+          ExecStart=/opt/kafka/bin/kafka-server-start.sh /opt/kafka/config/server.properties
+          ExecStop=/opt/kafka/bin/kafka-server-stop.sh
+          Restart=on-failure
+          User=root
+
+          [Install]
+          WantedBy=multi-user.target
+        mode: '0644'
+
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: yes
+
+    - name: Enable and start Kafka service
+      ansible.builtin.systemd:
+        name: kafka
+        enabled: true
+        state: started
+
+- name: Ensure firewalld rules for Kafka
+  hosts: cloud_vms
+  become: true
+  tasks:
+    - name: Open Kafka port 9092
+      ansible.builtin.firewalld:
+        port: 9092/tcp
+        permanent: true
+        immediate: true
+        state: enabled
+
+    - name: Reload firewalld
+      ansible.builtin.command:
+        cmd: firewall-cmd --reload
+

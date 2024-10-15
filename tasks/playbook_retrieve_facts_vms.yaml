@@ -5,16 +5,30 @@
   tasks:
     - name: "Get VM details from OpenStack"
       openstack.cloud.server_info:
-        cloud: chameleon            # Use your cloud alias from clouds.yaml
+        cloud: chameleon  # Ensure this matches the alias in your clouds.yaml
       register: vm_info
 
     - name: "Show the VM details"
       debug:
         var: vm_info
 
+    - name: "Extract public IP addresses"
+      set_fact:
+        vm_ips: "{{ vm_info.servers | selectattr('addresses', 'defined') | map(attribute='addresses.public') | map('selectattr', 'OS-EXT-IPS:type', 'equalto', 'floating') | map('first') | map(attribute='addr') | list }}"
+
+    - name: "Show extracted public IPs"
+      debug:
+        var: vm_ips
+
     - name: "Update Inventory with VM IPs"
       lineinfile:
-        path: "/home/ryan/anisble_playbooks/Inventory"  # Update this path to your Inventory file
-        line: "{{ item.name }} ansible_host={{ item.addresses.public[0].addr }}"
-      loop: "{{ vm_info.servers }}"
-      when: "'public' in item.addresses"
+        path: "/home/ryan/ansible_playbooks/Inventory"  # Update this path to your Inventory file
+        line: "{{ item.name }} ansible_host={{ item.ip }}"
+        create: true  # Create the file if it doesn't exist
+      loop: "{{ vm_info.servers | map(attribute='name') | zip(vm_ips) | list }}"
+      loop_control:
+        label: "{{ item.0 }}"
+      vars:
+        item:
+          name: "{{ item.0 }}"
+          ip: "{{ item.1 }}"

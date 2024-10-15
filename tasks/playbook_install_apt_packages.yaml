@@ -2,10 +2,54 @@
 - name: Update apt repository cache
   ansible.builtin.apt:
     update_cache: true
+  tags:
+    - apt
 
-- name: Install required apt packages
+- name: Ensure necessary apt packages are installed
   ansible.builtin.apt:
     name:
-      - python3-pip
-      - build-essential
+      - python3-pip              # Needed for installing Python packages
+      - build-essential          # Development tools (for compiling)
+      - openjdk-11-jdk           # Java runtime needed for Kafka
+      - docker.io                # Docker engine
+      - apt-transport-https      # Required for adding repositories over HTTPS
+      - ca-certificates
+      - curl                     # Required to interact with APIs
+      - gnupg                    # For adding external keys
+      - lsb-release              # OS information needed for Docker setup
+      - zookeeperd               # Zookeeper for managing Kafka
+      - net-tools                # Useful for networking commands (e.g., ifconfig)
     state: present
+  tags:
+    - apt
+
+- name: Add Docker GPG key
+  ansible.builtin.apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+  tags:
+    - docker
+
+- name: Add Docker repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    state: present
+  tags:
+    - docker
+
+- name: Install Docker from Docker repository
+  ansible.builtin.apt:
+    name: docker-ce
+    state: present
+    update_cache: true
+  tags:
+    - docker
+
+- name: Install pip packages for Python
+  ansible.builtin.pip:
+    name:
+      - kafka-python   # Kafka-Python package for working with Kafka
+      - requests       # Useful for sending HTTP requests (for ML server communication)
+    state: present
+  tags:
+    - python-packages

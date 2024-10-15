@@ -1,6 +1,53 @@
 ---
-- name: Download Kafka tarball locally
-  ansible.builtin.get_url:
-    url: "https://downloads.apache.org/kafka/3.8.0/kafka_2.13-3.8.0.tgz"
-    dest: "/tmp/kafka.tgz"
-    mode: '0644'
+- name: Download and Install Kafka on Cloud VMs
+  hosts: CloudVMs
+  become: true
+  tasks:
+    
+    - name: Ensure /opt/kafka directory exists
+      ansible.builtin.file:
+        path: /opt/kafka
+        state: directory
+        mode: '0755'
+
+    - name: Download Kafka tarball to /opt/kafka
+      ansible.builtin.get_url:
+        url: "https://downloads.apache.org/kafka/3.8.0/kafka_2.13-3.8.0.tgz"
+        dest: "/opt/kafka/kafka_2.13-3.8.0.tgz"
+        mode: '0644'
+        checksum: sha256:14e61751c9b5ea2b805b5b207dfc3a88c576469ae79e35460f20d902fbf874d1 # Optional checksum for file validation
+      register: kafka_download_result
+
+    - name: Validate Kafka download
+      ansible.builtin.stat:
+        path: "/opt/kafka/kafka_2.13-3.8.0.tgz"
+      register: kafka_file_check
+
+    - name: Fail if Kafka tarball was not downloaded
+      ansible.builtin.fail:
+        msg: "Kafka tarball download failed. Exiting."
+      when: kafka_file_check.stat.exists == False
+
+    - name: Extract Kafka tarball
+      ansible.builtin.unarchive:
+        src: "/opt/kafka/kafka_2.13-3.8.0.tgz"
+        dest: "/opt/kafka"
+        remote_src: yes
+        creates: "/opt/kafka/kafka_2.13-3.8.0"  # Ensure extraction happens only if the directory doesn't exist
+
+    - name: Symlink Kafka to a standard directory (e.g., /opt/kafka/current)
+      ansible.builtin.file:
+        src: "/opt/kafka/kafka_2.13-3.8.0"
+        dest: "/opt/kafka/current"
+        state: link
+
+    - name: Set Kafka environment variables
+      ansible.builtin.lineinfile:
+        path: /etc/profile.d/kafka.sh
+        line: 'export KAFKA_HOME=/opt/kafka/current'
+        create: yes
+      notify: Reload environment variables
+
+  handlers:
+    - name: Reload environment variables
+      ansible.builtin.shell: source /etc/profile.d/kafka.sh

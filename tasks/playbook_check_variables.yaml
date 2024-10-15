@@ -1,11 +1,22 @@
 ---
 - name: Check if all required variables are defined
-  ansible.builtin.fail:
-    msg: "Required variable {{ item }} is not defined."
-  when: item is not defined
-  loop:
-    - local_user
-    - cloud_user
-    - ansible_user
-    - ansible_ssh_private_key_file
-    - ansible_ssh_common_args
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Check if required variables are defined
+      ansible.builtin.assert:
+        that:
+          - "{{ item }} is defined"
+        fail_msg: "Required variable {{ item }} is not defined. Please check your configuration."
+      loop:
+        - local_user
+        - cloud_user
+        - ansible_user
+        - ansible_ssh_private_key_file
+        - ansible_ssh_common_args
+      tags:
+        - always
+
+    - name: Display a message if all variables are defined
+      ansible.builtin.debug:
+        msg: "All required variables are defined!"
