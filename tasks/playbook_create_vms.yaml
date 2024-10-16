@@ -1,0 +1,34 @@
+# No '---' at the top
+
+- name: "Create VMs using OpenStack"
+  openstack.cloud.server:
+    cloud: "{{ openstack_cloud }}"
+    name: "{{ item.name }}"
+    image: "{{ cloud_image_name }}"
+    flavor: "{{ cloud_flavor }}"
+    network: "{{ vm_network_name }}"
+    key_name: "{{ ssh_key_name }}"
+    wait: yes
+  loop:
+    - { name: "vm1" }
+    - { name: "vm2" }
+    - { name: "vm3" }
+    - { name: "vm4" }
+  register: vm_info
+
+- name: "Debug VM Info"
+  debug:
+    var: vm_info
+
+# Updated add_host task to correctly access the VM data
+- name: "Add new VMs to in-memory inventory (CloudVMs group)"
+  add_host:
+    name: "{{ item.server.name }}"
+    ansible_host: "{{ item.server.addresses[vm_network_name][0]['addr'] | default('') }}"
+    ansible_user: "cc"
+    groups: CloudVMs
+  loop: "{{ vm_info.results }}"
+
+- name: "Display CloudVMs hosts added to inventory"
+  debug:
+    var: groups['CloudVMs']

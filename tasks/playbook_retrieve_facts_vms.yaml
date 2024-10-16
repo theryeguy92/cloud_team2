@@ -1,0 +1,15 @@
+---
+- name: "Gather IP addresses of the VMs"
+  openstack.cloud.server_info:
+    cloud: "{{ openstack_cloud }}"
+    name: "{{ item }}"
+  loop:
+    - "vm1"
+    - "vm2"
+    - "vm3"
+    - "vm4"
+  register: vm_facts
+
+- name: "Set the IP addresses as variables"
+  set_fact:
+    vm_ips: "{{ vm_facts.results | map(attribute='interface_ip') }}"
