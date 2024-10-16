@@ -24,7 +24,7 @@
 - name: "Add new VMs to in-memory inventory (CloudVMs group)"
   add_host:
     name: "{{ item.server.name }}"
-    ansible_host: "{{ item.server.addresses[vm_network_name][0]['addr'] | default('') }}"
+    ansible_host: "{{ item.accessIPv4 }}"
     ansible_user: "cc"
     groups: CloudVMs
   loop: "{{ vm_info.results }}"

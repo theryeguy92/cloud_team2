@@ -1,11 +1,11 @@
 # vars.yaml
 local_user: ryan
-cloud_user: cc
+cloud_user: cc # Changed from 'cc' to 'ubuntu'
 openstack_cloud: CH-822922
 cloud_image_name: ubuntu-20.04
 cloud_flavor: m1.medium
 vm_network_name: CH-822922-net
-ssh_key_name: my-ssh-key  # This should match the key name registered in OpenStack
+ssh_key_name: team6  # Update this to match the key used in OpenStack
 
 # Define the path to your SSH private key used to access the VMs
 ansible_ssh_private_key_file: /media/sf_root_ubuntu/Assignment1.pem

@@ -180,4 +180,3 @@
 
   tasks:
     - import_tasks: tasks/playbook_set_firewalld_rules.yaml
-
