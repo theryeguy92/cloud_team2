@@ -4,10 +4,10 @@
     cloud: "{{ openstack_cloud }}"
     name: "{{ item }}"
   loop:
-    - "vm1"
-    - "vm2"
-    - "vm3"
-    - "vm4"
+    - "vm1_team2"
+    - "vm2_team2"
+    - "vm3_team2"
+    - "vm4_team2"
   register: vm_facts
 
 - name: "Set the IP addresses as variables"

@@ -33,7 +33,7 @@
     - openstack.cloud
 
   tasks:
-    - name: Create VMs using OpenStack
+    - name: "Create VMs using OpenStack"
       os_server:
         state: present
         cloud: "{{ openstack_cloud }}"
@@ -44,13 +44,13 @@
         key_name: "{{ ssh_key_name }}"
         wait: yes
       loop:
-        - { name: 'vm1' }
-        - { name: 'vm2' }
-        - { name: 'vm3' }
-        - { name: 'vm4' }
+        - { name: 'vm1_team2' }
+        - { name: 'vm2_team2' }
+        - { name: 'vm3_team2' }
+        - { name: 'vm4_team2' }
       register: vm_info
 
-    - name: Extract private IPs of VMs
+    - name: "Extract private IPs of VMs"
       set_fact:
         vm_ips: >-
           {{
@@ -65,32 +65,25 @@
             | list
           }}
 
-    - name: Debug vm_ips
+    - name: "Debug vm_ips"
       debug:
         var: vm_ips
 
-    - name: Add new VMs to in-memory inventory (CloudVMs group)
+    - name: "Add new VMs to in-memory inventory (CloudVMs group)"
       add_host:
         name: "{{ item.server.name }}"
-        ansible_host: "{{ item_ip }}"
+        ansible_host: >-
+          {{
+            item.server.addresses[vm_network_name]
+            | selectattr('OS-EXT-IPS:type', 'equalto', 'floating')
+            | map(attribute='addr')
+            | first
+          }}
         ansible_user: "{{ cloud_user }}"
         ansible_ssh_private_key_file: "{{ ansible_ssh_private_key_file }}"
         ansible_ssh_common_args: "{{ ansible_ssh_common_args }}"
         groups: CloudVMs
       loop: "{{ vm_info.results }}"
-      loop_control:
-        loop_var: item
-      vars:
-        item_ip: >-
-          {{
-            item.server.addresses
-            | dict2items
-            | map(attribute='value')
-            | flatten
-            | selectattr('OS-EXT-IPS:type', 'equalto', 'fixed')
-            | map(attribute='addr')
-            | first
-          }}
 
 ###############################################################
 ### Play 3: Gather facts from Cloud VMs
@@ -166,17 +159,17 @@
     - import_tasks: tasks/playbook_install_kafka.yaml
 
 ###############################################################
-### Play 7: Set Firewalld Rules
+### Play 7: Set Firewall Rules
 ###############################################################
 
-- name: "Handle Firewalld policies"
+- name: "Configure Firewall policies"
   hosts: CloudVMs
   remote_user: "{{ cloud_user }}"
   become: true
   gather_facts: no
   collections:
     - ansible.builtin
-    - community.general
 
   tasks:
     - import_tasks: tasks/playbook_set_firewalld_rules.yaml
+

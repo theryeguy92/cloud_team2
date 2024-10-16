@@ -2,15 +2,15 @@
 local_user: ryan
 cloud_user: cc # Changed from 'cc' to 'ubuntu'
 openstack_cloud: CH-822922
-cloud_image_name: ubuntu-20.04
+cloud_image_name: CC-Ubuntu22.04
 cloud_flavor: m1.medium
 vm_network_name: CH-822922-net
-ssh_key_name: team6  # Update this to match the key used in OpenStack
+ssh_key_name: Assignment1.pem  # Update this to match the key used in OpenStack
 
 # Define the path to your SSH private key used to access the VMs
-ansible_ssh_private_key_file: /media/sf_root_ubuntu/Assignment1.pem
+ansible_ssh_private_key_file: ~/.ssh/Assignment1.pem
 
 # Define the SSH common arguments, including the ProxyCommand to use the bastion host
 ansible_ssh_common_args: >-
   -o StrictHostKeyChecking=no
-  -o ProxyCommand="ssh -W %h:%p -i /media/sf_root_ubuntu/F24_BASTION.pem cc@bastion"
+  -o ProxyCommand="ssh -W %h:%p -i ~/.ssh/F24_BASTION.pem cc@bastion"

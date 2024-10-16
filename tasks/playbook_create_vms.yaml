@@ -10,10 +10,10 @@
     key_name: "{{ ssh_key_name }}"
     wait: yes
   loop:
-    - { name: "vm1" }
-    - { name: "vm2" }
-    - { name: "vm3" }
-    - { name: "vm4" }
+    - { name: "vm1_team2" }
+    - { name: "vm2_team2" }
+    - { name: "vm3_team2" }
+    - { name: "vm4_team2" }
   register: vm_info
 
 - name: "Debug VM Info"
