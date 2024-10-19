@@ -1,0 +1,11 @@
+clouds:
+  chameleon:
+    auth:
+      auth_url: https://chi.uc.chameleoncloud.org:5000/v3
+      username: michelle.l.findley@vanderbilt.edu
+      password: <your-password>  # Replace with your actual password
+      project_id: 9c3848Cc69044cdfb5a8c7b5e273b276
+      user_domain_name: Default
+    region_name: RegionOne
+    interface: public
+    identity_api_version: 3
